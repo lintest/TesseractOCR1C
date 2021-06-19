@@ -1,0 +1,4 @@
+[submodule "tesseract"]
+path = tesseract
+url = https://github.com/lintest/Tesseract-OCR_for_Windows.git
+branch = master

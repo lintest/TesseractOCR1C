@@ -8,7 +8,7 @@ std::vector<std::u16string> TesseractControl::names = {
 
 TesseractControl::TesseractControl()
 {
-	AddProcedure(u"Init", u"Инициализировать", [&](VH path, VH lang) { this->Init(path, lang); });
+	AddFunction(u"Init", u"Инициализировать", [&](VH path, VH lang) { this->result = this->Init(path, lang); });
 	AddFunction(u"Recognize", u"Распознать", [&](VH var) { this->result = Recognize(var); });
 }
 
@@ -16,10 +16,11 @@ TesseractControl::~TesseractControl()
 {
 }
 
-void TesseractControl::Init(const std::string& path, const std::string& lang)
+bool TesseractControl::Init(const std::string& path, const std::string& lang)
 {
-	api.Init(path.c_str(), lang.c_str(), tesseract::OEM_DEFAULT);
+	auto res = api.Init(path.c_str(), lang.c_str(), tesseract::OEM_DEFAULT);
 	api.SetPageSegMode(tesseract::PSM_AUTO);
+	return res == 0;
 }
 
 struct PixDeleter {
