@@ -13,5 +13,5 @@ private:
     TesseractControl();
     virtual ~TesseractControl();
     void Init(const std::string& path, const std::string& lang);
-    std::string GetHOCRText(VH &data);
+    std::string Recognize(VH &data);
 };

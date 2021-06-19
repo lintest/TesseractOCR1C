@@ -9,7 +9,7 @@ std::vector<std::u16string> TesseractControl::names = {
 TesseractControl::TesseractControl()
 {
 	AddProcedure(u"Init", u"Инициализировать", [&](VH path, VH lang) { this->Init(path, lang); });
-	AddFunction(u"GetHOCR", u"GetHOCR", [&](VH var) { this->result = GetHOCRText(var); });
+	AddFunction(u"Recognize", u"Распознать", [&](VH var) { this->result = Recognize(var); });
 }
 
 TesseractControl::~TesseractControl()
@@ -18,13 +18,20 @@ TesseractControl::~TesseractControl()
 
 void TesseractControl::Init(const std::string& path, const std::string& lang)
 {
-	api.Init(path.c_str(), lang.c_str());
+	api.Init(path.c_str(), lang.c_str(), tesseract::OEM_DEFAULT);
+	api.SetPageSegMode(tesseract::PSM_AUTO);
 }
 
-std::string TesseractControl::GetHOCRText(VH& img)
+struct PixDeleter {
+	void operator()(PIX* pix) { if (pix) pixDestroy(&pix); }
+};
+
+std::string TesseractControl::Recognize(VH& img)
 {
-	std::unique_ptr<PIX> pix{ pixReadMem((l_uint8*)img.data(), img.size()) };
+	std::unique_ptr<PIX, PixDeleter> pix{ 
+		pixReadMem((l_uint8*)img.data(), img.size()) 
+	};
 	api.SetImage(pix.get());
-	std::unique_ptr<char[]> text(api.GetHOCRText(1));
+	std::unique_ptr<char[]> text(api.GetAltoText(0));
 	return std::string(text.get());
 }
