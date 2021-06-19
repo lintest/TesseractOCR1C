@@ -11,6 +11,7 @@ TesseractControl::TesseractControl()
 {
 	AddFunction(u"Init", u"Инициализировать", [&](VH path, VH lang) { this->result = this->Init(path, lang); });
 	AddFunction(u"Recognize", u"Распознать", [&](VH image, VH format) { this->result = Recognize(image); }, { {1, u"xml"} });
+	AddProcedure(u"Exit", u"ЗавершитьРаботуСистемы", [&](VH status) { ExitProcess((UINT)(int)status); }, { {0, (int64_t)0 } });
 }
 
 TesseractControl::~TesseractControl()
