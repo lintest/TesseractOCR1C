@@ -4,12 +4,13 @@
 
 std::vector<std::u16string> TesseractControl::names = {
 	AddComponent(u"TesseractOCR", []() { return new TesseractControl; }),
+	AddComponent(u"TesseractOCR1C", []() { return new TesseractControl; }),
 };
 
 TesseractControl::TesseractControl()
 {
 	AddFunction(u"Init", u"Инициализировать", [&](VH path, VH lang) { this->result = this->Init(path, lang); });
-	AddFunction(u"Recognize", u"Распознать", [&](VH var) { this->result = Recognize(var); });
+	AddFunction(u"Recognize", u"Распознать", [&](VH image, VH format) { this->result = Recognize(image); }, { {1, u"xml"} });
 }
 
 TesseractControl::~TesseractControl()
@@ -30,8 +31,8 @@ struct PixDeleter {
 std::string TesseractControl::Recognize(VH& img)
 {
 	if (!ok) return {};
-	std::unique_ptr<PIX, PixDeleter> pix{ 
-		pixReadMem((l_uint8*)img.data(), img.size()) 
+	std::unique_ptr<PIX, PixDeleter> pix{
+		pixReadMem((l_uint8*)img.data(), img.size())
 	};
 	api.SetImage(pix.get());
 	std::unique_ptr<char[]> text(api.GetAltoText(0));
