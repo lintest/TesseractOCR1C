@@ -55,8 +55,8 @@ for:
         - job_name: Windows
 
     after_build:
-      - copy bin32\Release\%APPVEYOR_PROJECT_NAME%Win32.dll .
-      - copy bin64\Release\%APPVEYOR_PROJECT_NAME%Win64.dll .
+      - copy bin\Release\%APPVEYOR_PROJECT_NAME%Win32.dll .
+      - copy bin\Release\%APPVEYOR_PROJECT_NAME%Win64.dll .
       - powershell -File appveyor.ps1
       - appveyor PushArtifact AddIn.zip
       - mkdir database
