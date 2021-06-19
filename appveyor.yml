@@ -1,4 +1,4 @@
-version: 0.0.0.{build}
+version: 0.1.0.{build}
 configuration: Release
 platform: x64
 
@@ -11,8 +11,6 @@ skip_branch_with_pr: true
 
 environment:
   matrix:
-    - APPVEYOR_BUILD_WORKER_IMAGE: Ubuntu1804
-      job_name: Linux
     - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2019
       job_depends_on: Linux
       job_name: Windows
@@ -21,30 +19,15 @@ matrix:
   fast_finish: true
 
 install:
-  - cmd: git clone -q --branch=platform https://github.com/lintest/tools1c.git bin
-  - cmd: cd bin
-  - cmd: 7z x tools1c.part01.rar -p%KEY_1CV8T%
-  - cmd: cd ..
-
-  - sh: sudo dpkg --add-architecture i386
-  - sh: sudo apt -qq update
-  - sh: sudo apt -qq -y install
-      uuid-dev uuid-dev:i386
-      gcc-multilib g++-multilib
-
-  - git clone -q --branch=master --depth=1 https://github.com/lintest/RE-flex.git RE-flex
-  - cd RE-flex
-  - git checkout -b version v3.0.1
-  - sh: ./clean.sh
-  - sh: ./build.sh
+  - git clone -q --branch=platform https://github.com/lintest/tools1c.git bin
+  - cd bin
+  - 7z x tools1c.part01.rar -p%KEY_1CV8T%
   - cd ..
 
-  - appveyor DownloadFile https://boostorg.jfrog.io/artifactory/main/release/1.76.0/source/boost_1_76_0.tar.gz
-  - tar xzf boost_1_76_0.tar.gz
-  - cd boost_1_76_0
-  - sh: ./bootstrap.sh
-  - cmd: bootstrap.bat
-  - cmd: b2.exe toolset=msvc link=static threading=multi runtime-link=static release stage --with-regex --with-date_time --with-filesystem --with-locale
+  - git submodule update --init --recursive
+  - cd tesseract
+  - msbuild tesseract.sln /p:Configuration=Release /p:Platform=x64 /m
+  - msbuild tesseract.sln /p:Configuration=Release /p:Platform=x86 /m
   - cd ..
 
 init:
@@ -53,51 +36,25 @@ init:
   - cmd: echo.
 
 build_script:
-  - sh: echo "#define VERSION_FULL " ${APPVEYOR_BUILD_VERSION} > "version.h"
-  - cmd: powershell -File manifest.ps1
-
-  - sh: cd boost_1_76_0
-  - sh: ./b2 cxxflags="-fPIC -std=c++17" link=static threading=multi runtime-link=static release stage --with-regex --with-date_time --with-filesystem --with-locale address-model=32
-  - sh: cd ..
+  - powershell -File manifest.ps1
   - mkdir build32
   - cd build32
-  - sh: cmake -D CMAKE_BUILD_TYPE:STRING=Release -D TARGET_PLATFORM_32:BOOL=ON ..
-  - sh: cmake --build . --config Release --target ${APPVEYOR_PROJECT_NAME}
-  - cmd: cmake .. -A Win32 -DMySuffix2=32
-  - cmd: cmake --build . --config Release --target %APPVEYOR_PROJECT_NAME%
+  - cmake .. -A Win32 -DMySuffix2=32
+  - cmake --build . --config Release --target %APPVEYOR_PROJECT_NAME%
   - cd ..
 
-  - sh: cd boost_1_76_0
-  - sh: ./b2 cxxflags="-fPIC -std=c++17" link=static threading=multi runtime-link=static release stage --with-regex --with-date_time --with-filesystem --with-locale address-model=64
-  - sh: cd ..
   - mkdir build64
   - cd build64
-  - sh: cmake -D CMAKE_BUILD_TYPE:STRING=Release -D TARGET_PLATFORM_32:BOOL=OFF ..
-  - sh: cmake --build . --config Release --target ${APPVEYOR_PROJECT_NAME}
-  - cmd: cmake .. -A x64 -DMySuffix2=64
-  - cmd: cmake --build . --config Release --target %APPVEYOR_PROJECT_NAME%
+  - cmake .. -A x64 -DMySuffix2=64
+  - cmake --build . --config Release --target %APPVEYOR_PROJECT_NAME%
   - cd ..
 
 for:
   - matrix:
       only:
-        - job_name: Linux
-
-    after_build:
-      - 7z a AddIn.zip ./bin32/${APPVEYOR_PROJECT_NAME}Lin32.so
-      - 7z a AddIn.zip ./bin64/${APPVEYOR_PROJECT_NAME}Lin64.so
-
-    artifacts:
-      - path: AddIn.zip
-
-  - matrix:
-      only:
         - job_name: Windows
 
     after_build:
-      - 7z a keywords.zip keywords.json
-      - ps: New-Item -ItemType Directory -Force -Path example/Templates/Keywords/Ext | Out-Null
-      - ps: Copy-Item -Path keywords.zip -Destination example/Templates/Keywords/Ext/Template.bin
       - copy bin32\Release\%APPVEYOR_PROJECT_NAME%Win32.dll .
       - copy bin64\Release\%APPVEYOR_PROJECT_NAME%Win64.dll .
       - powershell -File appveyor.ps1

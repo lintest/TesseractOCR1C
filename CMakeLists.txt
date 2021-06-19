@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.10)
 
-project(Tesseract1C)
-set(TARGET Tesseract1C)
+project(TesseractOCR1C)
+set(TARGET TesseractOCR1C)
 
 add_library(${TARGET} SHARED
 	version.h
@@ -19,26 +19,11 @@ set (LIBRARY_OUTPUT_PATH ${CMAKE_SOURCE_DIR}/bin)
 set (EXECUTABLE_OUTPUT_PATH ${LIBRARY_OUTPUT_PATH})
 set (CMAKE_COMPILE_PDB_OUTPUT_DIRECTORY ${LIBRARY_OUTPUT_PATH})
 
-if (UNIX)
-	set(MyPrefix "")
-	if (APPLE)
-		set(MySuffix1 "Mac")
-	else(APPLE)
-		set(MySuffix1 "Lin")
-	endif(APPLE)
-	if (TARGET_PLATFORM_32)
-		set(MySuffix2 "32")
-	else()
-		set(MySuffix2 "64")
-	endif()
-else(UNIX)
-	if (NOT MSVC)
-		message(FATAL_ERROR "Must be compiled with MSVC on Windows")
-	endif(NOT MSVC)
-	set(MyPrefix "lib")
-	set(MySuffix1 "Win")
-endif(UNIX)
+if (NOT MSVC)
+	message(FATAL_ERROR "Must be compiled with MSVC on Windows")
+endif(NOT MSVC)
 
+set(MySuffix1 "Win")
 set_target_properties( ${PROJECT_NAME} PROPERTIES
 	   PREFIX ""
 	   OUTPUT_NAME ${PROJECT_NAME}${MySuffix1}${MySuffix2} 
@@ -52,33 +37,20 @@ set(BUILD_CLAR OFF CACHE BOOL "" FORCE)
 set(STATIC_CRT ON CACHE BOOL "" FORCE)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
-if (UNIX)
-	if (TARGET_PLATFORM_32)
-		set(CMAKE_LIBRARY_PATH "/usr/lib/i386-linux-gnu" CACHE PATH "<desc>")
-		SET(ARCH_FLAG "-m32")
-	else()
-		SET(ARCH_FLAG "-m64")
-	endif()
-	foreach(flag
-		CMAKE_EXE_LINKER_FLAGS CMAKE_MODULE_LINKER_FLAGS CMAKE_SHARED_LINKER_FLAGS CMAKE_C_FLAGS CMAKE_CXX_FLAGS )
-		if(NOT ${flag} MATCHES ${ARCH_FLAG})
-			set(${flag} ${${flag}} ${ARCH_FLAG} CACHE "STRING" "Linker flags" FORCE)
-		endif()
-	endforeach()
-	set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -s")
-	set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -s")
-else(UNIX)
-	add_definitions(/MT)
-	set(CMAKE_SUPPRESS_REGENERATION 1)
-	set(CMAKE_CONFIGURATION_TYPES "Debug;Release" CACHE STRING "" FORCE)
-	target_compile_definitions(${TARGET} PRIVATE _WINDOWS
-			_SILENCE_CXX17_CODECVT_HEADER_DEPRECATION_WARNING)
-	target_compile_options(${TARGET} PRIVATE /utf-8)
-endif(UNIX)
+add_definitions(/MT)
+set(CMAKE_SUPPRESS_REGENERATION 1)
+set(CMAKE_CONFIGURATION_TYPES "Debug;Release" CACHE STRING "" FORCE)
+target_compile_definitions(${TARGET} PRIVATE _WINDOWS
+		_SILENCE_CXX17_CODECVT_HEADER_DEPRECATION_WARNING)
+target_compile_options(${TARGET} PRIVATE /utf-8)
+
+if (MySuffix2 EQUAL "32")
+	target_link_directories(${TARGET} PRIVATE "${CMAKE_SOURCE_DIR}/tesseract/Release")
+else()
+	target_link_directories(${TARGET} PRIVATE "${CMAKE_SOURCE_DIR}/tesseract/x64/Release")
+endif()
 
 target_link_libraries(${TARGET} giflib.lib libjpeg.lib liblept.lib libpng.lib  libtesseract.lib libtiff.lib libwebp.lib openjpeg.lib zlib.lib)
-target_link_directories(${TARGET} PRIVATE "${CMAKE_SOURCE_DIR}/tesseract/x64/Release")
-
 target_include_directories(${TARGET} PRIVATE "${CMAKE_SOURCE_DIR}/tesseract/tesseract")
 target_include_directories(${TARGET} PRIVATE "${CMAKE_SOURCE_DIR}/tesseract/libtesseract")
 target_include_directories(${TARGET} PRIVATE "${CMAKE_SOURCE_DIR}/tesseract/tesseract_4.1/src/arch")

@@ -1,0 +1,5 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<bundle xmlns="http://v8.1c.ru/8.2/addin/bundle">
+	<component type="native" os="Windows" arch="i386" path="TesseractOCR1CWin32_0-1-0-0.dll" />
+	<component type="native" os="Windows" arch="x86_64" path="TesseractOCR1CWin64_0-1-0-0.dll" />
+</bundle>

@@ -7,6 +7,7 @@
 class TesseractControl : public AddInNative
 {
 private:
+    bool ok = false;
     tesseract::TessBaseAPI api;
 private:
     static std::vector<std::u16string> names;

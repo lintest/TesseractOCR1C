@@ -3,7 +3,7 @@
 #include "Tesseract1C.h"
 
 std::vector<std::u16string> TesseractControl::names = {
-	AddComponent(u"Tesseract1C", []() { return new TesseractControl; }),
+	AddComponent(u"TesseractOCR", []() { return new TesseractControl; }),
 };
 
 TesseractControl::TesseractControl()
@@ -18,9 +18,9 @@ TesseractControl::~TesseractControl()
 
 bool TesseractControl::Init(const std::string& path, const std::string& lang)
 {
-	auto res = api.Init(path.c_str(), lang.c_str(), tesseract::OEM_DEFAULT);
-	api.SetPageSegMode(tesseract::PSM_AUTO);
-	return res == 0;
+	ok = api.Init(path.c_str(), lang.c_str(), tesseract::OEM_DEFAULT) == 0;
+	if (ok) api.SetPageSegMode(tesseract::PSM_AUTO);
+	return ok;
 }
 
 struct PixDeleter {
@@ -29,6 +29,7 @@ struct PixDeleter {
 
 std::string TesseractControl::Recognize(VH& img)
 {
+	if (!ok) return {};
 	std::unique_ptr<PIX, PixDeleter> pix{ 
 		pixReadMem((l_uint8*)img.data(), img.size()) 
 	};
