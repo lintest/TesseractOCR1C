@@ -14,5 +14,6 @@ private:
     TesseractControl();
     virtual ~TesseractControl();
     bool Init(const std::string& path, const std::string& lang);
-    std::string Recognize(VH &data);
+    void Grayscale(VH& data, double r, double g, double b);
+    void Recognize(VH& data, double r, double g, double b);
 };

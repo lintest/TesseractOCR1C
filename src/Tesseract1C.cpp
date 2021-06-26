@@ -10,7 +10,17 @@ std::vector<std::u16string> TesseractControl::names = {
 TesseractControl::TesseractControl()
 {
 	AddFunction(u"Init", u"Инициализировать", [&](VH path, VH lang) { this->result = this->Init(path, lang); });
-	AddFunction(u"Recognize", u"Распознать", [&](VH image, VH format) { this->result = Recognize(image); }, { {1, u"json"} });
+
+	AddFunction(u"Recognize", u"Распознать"
+		, [&](VH image, VH r, VH g, VH b) { Recognize(image, r, g, b); }
+		, { {1, 0.0}, {2, 0.0}, {3, 0.0}, }
+	);
+
+	AddFunction(u"Discolor", u"Обесцветить"
+		, [&](VH image, VH r, VH g, VH b) { Grayscale(image, r, g, b); }
+		, { {1, 0.0}, {2, 0.0}, {3, 0.0}, }
+	);
+
 	AddProcedure(u"Exit", u"ЗавершитьРаботуСистемы", [&](VH status) { ExitProcess((UINT)(int)status); }, { {0, (int64_t)0 } });
 }
 
@@ -31,7 +41,7 @@ struct PixDeleter {
 
 using namespace tesseract;
 
-JSON rect(std::unique_ptr<ResultIterator> &it, PageIteratorLevel level) 
+JSON rect(std::unique_ptr<ResultIterator>& it, PageIteratorLevel level)
 {
 	int left, top, right, bottom;
 	it->BoundingBox(level, &left, &top, &right, &bottom);
@@ -43,12 +53,32 @@ JSON rect(std::unique_ptr<ResultIterator> &it, PageIteratorLevel level)
 	};
 }
 
-std::string TesseractControl::Recognize(VH& img)
+void TesseractControl::Grayscale(VH& img, double r, double g, double b)
 {
-	if (!ok) return {};
 	std::unique_ptr<PIX, PixDeleter> pix{
 		pixReadMem((l_uint8*)img.data(), img.size())
 	};
+	pix.reset(
+		pixConvertRGBToGray(pix.get(), (l_float32)r, (l_float32)g, (l_float32)b)
+	);
+	l_uint8* data = nullptr;
+	size_t size = 0;
+	if (pixWriteMem(&data, &size, pix.get(), IFF_PNG) == 0) {
+		result.AllocMemory(size);
+		memcpy(result.data(), data, size);
+		delete data;
+	}
+}
+
+void TesseractControl::Recognize(VH& img, double r, double g, double b)
+{
+	if (!ok) return;
+	std::unique_ptr<PIX, PixDeleter> pix{
+		pixReadMem((l_uint8*)img.data(), img.size())
+	};
+	pix.reset(
+		pixConvertRGBToGray(pix.get(), (l_float32)r, (l_float32)g, (l_float32)b)
+	);
 	api.SetImage(pix.get());
 	api.Recognize(nullptr);
 	std::unique_ptr<ResultIterator> it(api.GetIterator());
@@ -62,6 +92,7 @@ std::string TesseractControl::Recognize(VH& img)
 				while (!it->Empty(RIL_WORD)) {
 					JSON word = rect(it, RIL_WORD);
 					word["Text"] = it->GetUTF8Text(RIL_WORD);
+					word["Conf"] = (int)it->Confidence(RIL_WORD);
 					line.push_back(word);
 					if (it->IsAtFinalElement(RIL_TEXTLINE, RIL_WORD)) break;
 					it->Next(RIL_WORD);
@@ -77,5 +108,5 @@ std::string TesseractControl::Recognize(VH& img)
 		json.push_back(block);
 		it->Next(RIL_BLOCK);
 	}
-	return json.dump();
+	result = json.dump();
 }
