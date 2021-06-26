@@ -54,27 +54,27 @@ std::string TesseractControl::Recognize(VH& img)
 	std::unique_ptr<ResultIterator> it(api.GetIterator());
 	JSON json;
 	while (!it->Empty(RIL_BLOCK)) {
-		JSON block = rect(it, RIL_BLOCK);
+		JSON block;
 		while (!it->Empty(RIL_PARA)) {
-			JSON para = rect(it, RIL_PARA);
+			JSON para;
 			while (!it->Empty(RIL_TEXTLINE)) {
-				JSON line = rect(it, RIL_TEXTLINE);
+				JSON line;
 				while (!it->Empty(RIL_WORD)) {
 					JSON word = rect(it, RIL_WORD);
 					word["Text"] = it->GetUTF8Text(RIL_WORD);
-					line["Items"].push_back(word);
+					line.push_back(word);
 					if (it->IsAtFinalElement(RIL_TEXTLINE, RIL_WORD)) break;
 					it->Next(RIL_WORD);
 				}
-				para["Items"].push_back(line);
+				para.push_back(line);
 				if (it->IsAtFinalElement(RIL_PARA, RIL_TEXTLINE)) break;
 				it->Next(RIL_TEXTLINE);
 			}
-			block["Items"].push_back(para);
+			block.push_back(para);
 			if (it->IsAtFinalElement(RIL_BLOCK, RIL_PARA)) break;
 			it->Next(RIL_PARA);
 		}
-		json["Items"].push_back(block);
+		json.push_back(block);
 		it->Next(RIL_BLOCK);
 	}
 	return json.dump();
